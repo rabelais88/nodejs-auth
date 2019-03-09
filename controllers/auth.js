@@ -5,7 +5,8 @@ exports.getLogin = (req, res, next) => {
   res.render('auth/login', {
     path: '/login',
     pageTitle: 'Login',
-    isAuthenticated: false
+    isAuthenticated: false,
+    errorMessage: req.flash('error'),
   });
 };
 
@@ -21,16 +22,14 @@ exports.postLogin = async (req, res, next) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) {
-    return res.render('404', {
-      pageTitle: 'cannot find the user',
-      path: '/404',
-      isAuthenticated: req.session.isLoggedIn
-    });
+    req.flash('error', 'Invalid email or password');
+    return res.render('/login');
   }
-  console.log(user, user.password, password);
   const isSuccess = await bcrypt.compare(password, user.password);
-  console.log(isSuccess);
-  if (!isSuccess) return res.redirect('/login');
+  if (!isSuccess) {
+    req.flash('error', 'Invalid email or password');
+    return res.redirect('/login');
+  }
   req.session.isLoggedIn = true;
   req.session.user = user;
   await req.session.save();
